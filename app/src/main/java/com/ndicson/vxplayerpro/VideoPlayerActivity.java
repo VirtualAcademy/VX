@@ -1,15 +1,19 @@
 package com.ndicson.vxplayerpro;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
@@ -21,7 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
-public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, VideoControllerView.MediaPlayerControlListener, MediaPlayer.OnVideoSizeChangedListener, MediaPlayer.OnCompletionListener , SeekBar.OnSeekBarChangeListener {
+public class VideoPlayerActivity extends AppCompatActivity implements  SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, VideoControllerView.MediaPlayerControlListener, MediaPlayer.OnVideoSizeChangedListener, MediaPlayer.OnCompletionListener {
 
     private final static String TAG = "MainActivity";
     ResizeSurfaceView mVideoSurface;
@@ -49,7 +53,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
     private TextView videoCurrentDurationLabel;
     private TextView videoTotalDurationLabel;
     // Media Player
-    private MediaPlayer mp;
+//    private MediaPlayer mMediaPlayer;
     // Handler to update UI timer, progress bar etc,.
     private Handler mHandler = new Handler();
     ;
@@ -67,21 +71,21 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_player);
-/*
+
         // All player buttons
-        btnPlay = (ImageButton) findViewById(R.id.btnPlay);
-        btnForward = (ImageButton) findViewById(R.id.btnForward);
-        btnBackward = (ImageButton) findViewById(R.id.btnBackward);
-        btnNext = (ImageButton) findViewById(R.id.btnNext);
-        btnPrevious = (ImageButton) findViewById(R.id.btnPrevious);
-        btnPlaylist = (ImageButton) findViewById(R.id.btnPlaylist);
-        btnRepeat = (ImageButton) findViewById(R.id.btnRepeat);
-        btnShuffle = (ImageButton) findViewById(R.id.btnShuffle);
-        videoProgressBar = (SeekBar) findViewById(R.id.videoProgressBar);
+//        btnPlay = (ImageButton) findViewById(R.id.btn_play_pause);
+//        btnForward = (ImageButton) findViewById(R.id.btn_forward);
+        btnBackward = (ImageButton) findViewById(R.id.btn_backward);
+        btnNext = (ImageButton) findViewById(R.id.btn_skipfwd);
+//        btnPrevious = (ImageButton) findViewById(R.id.btn_skipback);
+//        btnPlaylist = (ImageButton) findViewById(R.id.btnPlaylist);
+//        btnRepeat = (ImageButton) findViewById(R.id.btnRepeat);
+//        btnShuffle = (ImageButton) findViewById(R.id.btnShuffle);
+//        videoProgressBar = (SeekBar) findViewById(R.id.progress_center);
         videoTitleLabel = (TextView) findViewById(R.id.videoTitle);
-        videoCurrentDurationLabel = (TextView) findViewById(R.id.videoCurrentDurationLabel);
-        videoTotalDurationLabel = (TextView) findViewById(R.id.videoTotalDurationLabel);
-*/
+//        videoCurrentDurationLabel = (TextView) findViewById(R.id.videoCurrentDurationLabel);
+//        videoTotalDurationLabel = (TextView) findViewById(R.id.videoTotalDurationLabel);
+
 
         mVideoSurface = (ResizeSurfaceView) findViewById(R.id.videoSurface);
         mContentView = findViewById(R.id.video_container);
@@ -90,11 +94,11 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
         videoHolder.addCallback(this);
 
         // Mediaplayer
-        mp = new MediaPlayer();
+        mMediaPlayer = new MediaPlayer();
         videoManager = new VideoManager();
         utils = new Vutils();
-        //mMediaPlayer.setOnVideoSizeChangedListener(this);
-        //(FrameLayout) findViewById(R.id.videoSurfaceContainer)
+        mMediaPlayer.setOnVideoSizeChangedListener(this);
+
         controller = new VideoControllerView.Builder(this, this)
                 .withVideoTitle("Buck Bunny")
                 .withVideoSurfaceView(mVideoSurface)//to enable toggle display controller view
@@ -104,6 +108,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
                 .exitIcon(R.drawable.video_top_back)
                 .pauseIcon(R.drawable.btn_pause)
                 .playIcon(R.drawable.btn_play)
+                .playListIcon(R.drawable.btn_playlist)
                 .shrinkIcon(R.drawable.ic_media_fullscreen_shrink)
                 .stretchIcon(R.drawable.ic_media_fullscreen_stretch)
                 .build((FrameLayout) findViewById(R.id.videoSurfaceContainer));//layout container that hold video play view
@@ -111,8 +116,8 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
         mLoadingView.setVisibility(View.VISIBLE);
 
         // Listeners
-        videoProgressBar.setOnSeekBarChangeListener(this); // Important
-        mp.setOnCompletionListener(this); // Important
+       // videoProgressBar.setOnSeekBarChangeListener(this); // Important
+        mMediaPlayer.setOnCompletionListener(this); // Important
 
         // Getting all video list
         videoList = videoManager.getPlayList();
@@ -125,174 +130,174 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
          * plays a video and changes button to pause image
          * pauses a video and changes button to play image
          * */
-        btnPlay.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                // check for already playing
-                if (mp.isPlaying()) {
-                    if (mp != null) {
-                        mp.pause();
-                        // Changing button image to play button
-                        btnPlay.setImageResource(R.drawable.btn_play);
-                    }
-                } else {
-                    // Resume video
-                    if (mp != null) {
-                        mp.start();
-                        // Changing button image to pause button
-                        btnPlay.setImageResource(R.drawable.btn_pause);
-                    }
-                }
-
-            }
-        });
-
-        /**
-         * Forward button click event
-         * Forwards video specified seconds
-         * */
-        btnForward.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                // get current video position				
-                int currentPosition = mp.getCurrentPosition();
-                // check if seekForward time is lesser than video duration
-                if (currentPosition + seekForwardTime <= mp.getDuration()) {
-                    // forward video
-                    mp.seekTo(currentPosition + seekForwardTime);
-                } else {
-                    // forward to end position
-                    mp.seekTo(mp.getDuration());
-                }
-            }
-        });
-
-        /**
-         * Backward button click event
-         * Backward video to specified seconds
-         * */
-        btnBackward.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                // get current video position				
-                int currentPosition = mp.getCurrentPosition();
-                // check if seekBackward time is greater than 0 sec
-                if (currentPosition - seekBackwardTime >= 0) {
-                    // forward video
-                    mp.seekTo(currentPosition - seekBackwardTime);
-                } else {
-                    // backward to starting position
-                    mp.seekTo(0);
-                }
-
-            }
-        });
-
-        /**
-         * Next button click event
-         * Plays next video by taking currentVideoIndex + 1
-         * */
-        btnNext.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                // check if next video is there or not
-                if (currentVideoIndex < (videoList.size() - 1)) {
-                    playVideo(currentVideoIndex + 1);
-                    currentVideoIndex = currentVideoIndex + 1;
-                } else {
-                    // play first video
-                    playVideo(0);
-                    currentVideoIndex = 0;
-                }
-
-            }
-        });
-
-        /**
-         * Back button click event
-         * Plays previous video by currentVideoIndex - 1
-         * */
-        btnPrevious.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                if (currentVideoIndex > 0) {
-                    playVideo(currentVideoIndex - 1);
-                    currentVideoIndex = currentVideoIndex - 1;
-                } else {
-                    // play last video
-                    playVideo(videoList.size() - 1);
-                    currentVideoIndex = videoList.size() - 1;
-                }
-
-            }
-        });
-
-        /**
-         * Button Click event for Repeat button
-         * Enables repeat flag to true
-         * */
-        btnRepeat.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                if (isRepeat) {
-                    isRepeat = false;
-                    Toast.makeText(getApplicationContext(), "Repeat is OFF", Toast.LENGTH_SHORT).show();
-                    btnRepeat.setImageResource(R.drawable.btn_repeat);
-                } else {
-                    // make repeat to true
-                    isRepeat = true;
-                    Toast.makeText(getApplicationContext(), "Repeat is ON", Toast.LENGTH_SHORT).show();
-                    // make shuffle to false
-                    isShuffle = false;
-                    btnRepeat.setImageResource(R.drawable.btn_repeat_focused);
-                    btnShuffle.setImageResource(R.drawable.btn_shuffle);
-                }
-            }
-        });
-
-        /**
-         * Button Click event for Shuffle button
-         * Enables shuffle flag to true
-         * */
-        btnShuffle.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                if (isShuffle) {
-                    isShuffle = false;
-                    Toast.makeText(getApplicationContext(), "Shuffle is OFF", Toast.LENGTH_SHORT).show();
-                    btnShuffle.setImageResource(R.drawable.btn_shuffle);
-                } else {
-                    // make repeat to true
-                    isShuffle = true;
-                    Toast.makeText(getApplicationContext(), "Shuffle is ON", Toast.LENGTH_SHORT).show();
-                    // make shuffle to false
-                    isRepeat = false;
-                    btnShuffle.setImageResource(R.drawable.btn_shuffle_focused);
-                    btnRepeat.setImageResource(R.drawable.btn_repeat);
-                }
-            }
-        });
-
-        /**
-         * Button Click event for Play list click event
-         * Launches list activity which displays list of video
-         * */
-        btnPlaylist.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-                Intent i = new Intent(getApplicationContext(), PlayListActivity.class);
-                startActivityForResult(i, 100);
-            }
-        });
-
+//        btnPlay.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                // check for already playing
+//                if (mMediaPlayer.isPlaying()) {
+//                    if (mMediaPlayer != null) {
+//                        mMediaPlayer.pause();
+//                        // Changing button image to play button
+//                        btnPlay.setImageResource(R.drawable.img_btn_play);
+//                    }
+//                } else {
+//                    // Resume video
+//                    if (mMediaPlayer != null) {
+//                        mMediaPlayer.start();
+//                        // Changing button image to pause button
+//                        btnPlay.setImageResource(R.drawable.img_btn_pause);
+//                    }
+//                }
+//
+//            }
+//        });
+//
+//        /**
+//         * Forward button click event
+//         * Forwards video specified seconds
+//         * */
+//        btnForward.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                // get current video position
+//                int currentPosition = mMediaPlayer.getCurrentPosition();
+//                // check if seekForward time is lesser than video duration
+//                if (currentPosition + seekForwardTime <= mMediaPlayer.getDuration()) {
+//                    // forward video
+//                    mMediaPlayer.seekTo(currentPosition + seekForwardTime);
+//                } else {
+//                    // forward to end position
+//                    mMediaPlayer.seekTo(mMediaPlayer.getDuration());
+//                }
+//            }
+//        });
+//
+//        /**
+//         * Backward button click event
+//         * Backward video to specified seconds
+//         * */
+//        btnBackward.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                // get current video position
+//                int currentPosition = mMediaPlayer.getCurrentPosition();
+//                // check if seekBackward time is greater than 0 sec
+//                if (currentPosition - seekBackwardTime >= 0) {
+//                    // forward video
+//                    mMediaPlayer.seekTo(currentPosition - seekBackwardTime);
+//                } else {
+//                    // backward to starting position
+//                    mMediaPlayer.seekTo(0);
+//                }
+//
+//            }
+//        });
+//
+//        /**
+//         * Next button click event
+//         * Plays next video by taking currentVideoIndex + 1
+//         * */
+//        btnNext.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                // check if next video is there or not
+//                if (currentVideoIndex < (videoList.size() - 1)) {
+//                    playVideo(currentVideoIndex + 1);
+//                    currentVideoIndex = currentVideoIndex + 1;
+//                } else {
+//                    // play first video
+//                    playVideo(0);
+//                    currentVideoIndex = 0;
+//                }
+//
+//            }
+//        });
+//
+//        /**
+//         * Back button click event
+//         * Plays previous video by currentVideoIndex - 1
+//         * */
+//        btnPrevious.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                if (currentVideoIndex > 0) {
+//                    playVideo(currentVideoIndex - 1);
+//                    currentVideoIndex = currentVideoIndex - 1;
+//                } else {
+//                    // play last video
+//                    playVideo(videoList.size() - 1);
+//                    currentVideoIndex = videoList.size() - 1;
+//                }
+//
+//            }
+//        });
+//
+//        /**
+//         * Button Click event for Repeat button
+//         * Enables repeat flag to true
+//         * */
+//        btnRepeat.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                if (isRepeat) {
+//                    isRepeat = false;
+//                    Toast.makeText(getApplicationContext(), "Repeat is OFF", Toast.LENGTH_SHORT).show();
+//                    btnRepeat.setImageResource(R.drawable.btn_repeat);
+//                } else {
+//                    // make repeat to true
+//                    isRepeat = true;
+//                    Toast.makeText(getApplicationContext(), "Repeat is ON", Toast.LENGTH_SHORT).show();
+//                    // make shuffle to false
+//                    isShuffle = false;
+//                    btnRepeat.setImageResource(R.drawable.btn_repeat_focused);
+//                    btnShuffle.setImageResource(R.drawable.btn_shuffle);
+//                }
+//            }
+//        });
+//
+//        /**
+//         * Button Click event for Shuffle button
+//         * Enables shuffle flag to true
+//         * */
+//        btnShuffle.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                if (isShuffle) {
+//                    isShuffle = false;
+//                    Toast.makeText(getApplicationContext(), "Shuffle is OFF", Toast.LENGTH_SHORT).show();
+//                    btnShuffle.setImageResource(R.drawable.btn_shuffle);
+//                } else {
+//                    // make repeat to true
+//                    isShuffle = true;
+//                    Toast.makeText(getApplicationContext(), "Shuffle is ON", Toast.LENGTH_SHORT).show();
+//                    // make shuffle to false
+//                    isRepeat = false;
+//                    btnShuffle.setImageResource(R.drawable.btn_shuffle_focused);
+//                    btnRepeat.setImageResource(R.drawable.btn_repeat);
+//                }
+//            }
+//        });
+//
+//        /**
+//         * Button Click event for Play list click event
+//         * Launches list activity which displays list of video
+//         * */
+//        btnPlaylist.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View arg0) {
+//                Intent i = new Intent(getApplicationContext(), PlayListActivity.class);
+//                startActivityForResult(i, 100);
+//            }
+//        });
+//
     }
 
     /**
@@ -319,23 +324,23 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
     public void playVideo(int videoIndex) {
         // Play video
         try {
-            mp.reset();
-            mp.setDataSource(videoList.get(videoIndex).get("videoPath"));
-            mp.prepare();
-            mp.start();
-            // Displaying Video title
-            String videoTitle = videoList.get(videoIndex).get("videoTitle");
-            videoTitleLabel.setText(videoTitle);
+            mMediaPlayer.reset();
+            mMediaPlayer.setDataSource(videoList.get(videoIndex).get("videoPath"));
+            mMediaPlayer.prepare();
+            mMediaPlayer.start();
+//            // Displaying Video title
+//            String videoTitle = videoList.get(videoIndex).get("videoTitle");
+//            videoTitleLabel.setText(videoTitle);
 
-            // Changing Button Image to pause image
-            btnPlay.setImageResource(R.drawable.btn_pause);
+//            // Changing Button Image to pause image
+//            btnPlay.setImageResource(R.drawable.img_btn_pause);
 
             // set Progress bar values
-            videoProgressBar.setProgress(0);
-            videoProgressBar.setMax(100);
+//            videoProgressBar.setProgress(0);
+//            videoProgressBar.setMax(100);
 
             // Updating progress bar
-            updateProgressBar();
+//            updateProgressBar();
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {
@@ -355,66 +360,66 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
 
     /**
      * Update timer on seekbar
-     */
-    public void updateProgressBar() {
-        mHandler.postDelayed(mUpdateTimeTask, 100);
-    }
+//     */
+//    public void updateProgressBar() {
+//        mHandler.postDelayed(mUpdateTimeTask, 100);
+//    }
 
     /**
-     * Background Runnable thread
-     */
-    private Runnable mUpdateTimeTask = new Runnable() {
-        public void run() {
-            long totalDuration = mp.getDuration();
-            long currentDuration = mp.getCurrentPosition();
-
-            // Displaying Total Duration time
-            videoTotalDurationLabel.setText("" + utils.milliSecondsToTimer(totalDuration));
-            // Displaying time completed playing
-            videoCurrentDurationLabel.setText("" + utils.milliSecondsToTimer(currentDuration));
-
-            // Updating progress bar
-            int progress = (int) (utils.getProgressPercentage(currentDuration, totalDuration));
-            //Log.d("Progress", ""+progress);
-            videoProgressBar.setProgress(progress);
-
-            // Running this thread after 100 milliseconds
-            mHandler.postDelayed(this, 100);
-        }
-    };
+//     * Background Runnable thread
+//     */
+//    private Runnable mUpdateTimeTask = new Runnable() {
+//        public void run() {
+//            long totalDuration = mMediaPlayer.getDuration();
+//            long currentDuration = mMediaPlayer.getCurrentPosition();
+//
+//            // Displaying Total Duration time
+//            videoTotalDurationLabel.setText("" + utils.milliSecondsToTimer(totalDuration));
+//            // Displaying time completed playing
+//            videoCurrentDurationLabel.setText("" + utils.milliSecondsToTimer(currentDuration));
+//
+//            // Updating progress bar
+//            int progress = (int) (utils.getProgressPercentage(currentDuration, totalDuration));
+//            //Log.d("Progress", ""+progress);
+//            videoProgressBar.setProgress(progress);
+//
+//            // Running this thread after 100 milliseconds
+//            mHandler.postDelayed(this, 100);
+//        }
+//    };
 
     /**
      *
      * */
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
-
-    }
+//    @Override
+//    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
+//
+//    }
 
     /**
      * When user starts moving the progress handler
      */
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-        // remove message Handler from updating progress bar
-        mHandler.removeCallbacks(mUpdateTimeTask);
-    }
+//    @Override
+//    public void onStartTrackingTouch(SeekBar seekBar) {
+//        // remove message Handler from updating progress bar
+//        mHandler.removeCallbacks(mUpdateTimeTask);
+//    }
 
     /**
      * When user stops moving the progress hanlder
-     */
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
-        mHandler.removeCallbacks(mUpdateTimeTask);
-        int totalDuration = mp.getDuration();
-        int currentPosition = utils.progressToTimer(seekBar.getProgress(), totalDuration);
-
-        // forward or backward to certain seconds
-        mp.seekTo(currentPosition);
-
-        // update timer progress again
-        updateProgressBar();
-    }
+//     */
+//    @Override
+//    public void onStopTrackingTouch(SeekBar seekBar) {
+//        mHandler.removeCallbacks(mUpdateTimeTask);
+//        int totalDuration = mMediaPlayer.getDuration();
+//        int currentPosition = utils.progressToTimer(seekBar.getProgress(), totalDuration);
+//
+//        // forward or backward to certain seconds
+//        mMediaPlayer.seekTo(currentPosition);
+//
+//        // update timer progress again
+//        updateProgressBar();
+//    }
 
     /**
      * On Video Playing completed
@@ -449,20 +454,27 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
     }
 
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+//        controller.show();
+        return false;
+    }
+
+//
+//    @Override
+//    public void onDestroy() {
+//        super.onDestroy();
+//        mMediaPlayer.release();
+//    }
+
     /**
      * Implementing SurfaceHolder.Callback methonds
      */
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        mp.release();
-    }
-
-    @Override
     public void surfaceCreated(SurfaceHolder holder) {
         mMediaPlayer.setDisplay(holder);
-        mMediaPlayer.prepareAsync();
+//        mMediaPlayer.prepareAsync();
 
     }
 
@@ -569,15 +581,22 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
      */
 
     @Override
-    public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
-        mVideoHeight = mp.getVideoHeight();
-        mVideoWidth = mp.getVideoWidth();
+    public void onVideoSizeChanged(MediaPlayer mMediaPlayer, int width, int height) {
+        mVideoHeight = mMediaPlayer.getVideoHeight();
+        mVideoWidth = mMediaPlayer.getVideoWidth();
         if (mVideoHeight > 0 && mVideoWidth > 0){
             mVideoSurface.adjustSize(mContentView.getWidth(), mContentView.getHeight(), mMediaPlayer.getVideoWidth(), mMediaPlayer.getVideoHeight());
         }
 
 
 }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mVideoWidth > 0 && mVideoHeight > 0)
+            mVideoSurface.adjustSize(getDeviceWidth(this),getDeviceHeight(this),mVideoSurface.getWidth(), mVideoSurface.getHeight());
+    }
 
 //================##### End MediaPlayer.OnVideoSizeChangedListener method Implementation ####=============================//
 
@@ -586,10 +605,14 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
      */
 
     @Override
-    public void onPrepared(MediaPlayer mp) {
+    public void onPrepared(MediaPlayer mMediaPlayer) {
 
+        //setup video controller view
+        mLoadingView.setVisibility(View.GONE);
+        mVideoSurface.setVisibility(View.VISIBLE);
+        mMediaPlayer.start();
+        mIsComplete = false;
     }
-
 
 //================##### End MediaPlayer.OnPreparedListener, method Implementation ####=============================//
 
@@ -605,6 +628,19 @@ public class VideoPlayerActivity extends AppCompatActivity implements SurfaceHol
         }
     }
 
+    public static int getDeviceWidth(Context context) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(mDisplayMetrics);
+        return mDisplayMetrics.widthPixels;
+    }
+
+    public static int getDeviceHeight(Context context) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(mDisplayMetrics);
+        return mDisplayMetrics.heightPixels;
+    }
 
 //================##### End Other method Implementation ####=============================//
 

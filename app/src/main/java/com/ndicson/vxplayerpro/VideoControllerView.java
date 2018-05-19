@@ -71,10 +71,13 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private int mShrinkIcon;
     @DrawableRes
     private int mStretchIcon;
+    @DrawableRes
+    private int mPlayListIcon;
 
     //top layout
     private View mTopLayout;
     private ImageButton mBackButton;
+    private ImageButton mPlayListButton;
     private TextView mTitleText;
 
     //center layout
@@ -113,6 +116,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         this.mRewindIcon = builder.rewindIcon;
         this.mNextIcon = builder.nextIcon;
         this.mPrevIcon = builder.prevIcon;
+        this.mPlayListIcon = builder.playListIcon;
         this.mStretchIcon = builder.stretchIcon;
         this.mShrinkIcon = builder.shrinkIcon;
         this.mSurfaceView = builder.surfaceView;
@@ -155,6 +159,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         private int shrinkIcon = R.drawable.ic_media_fullscreen_shrink;
         @DrawableRes
         private int stretchIcon = R.drawable.ic_media_fullscreen_stretch;
+        @DrawableRes
+        public int playListIcon = R.drawable.btn_playlist;
 
         //Required
         public Builder(@Nullable Activity context, @Nullable MediaPlayerControlListener mediaControlListener){
@@ -221,6 +227,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
             this.shrinkIcon = shrinkIcon;
             return this;
         }
+
+        public Builder playListIcon(@DrawableRes int playListIcon) {
+            this.playListIcon = playListIcon;
+            return this;
+        }
+
 
         public Builder stretchIcon(@DrawableRes int stretchIcon) {
             this.stretchIcon = stretchIcon;
@@ -311,6 +323,13 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         }
 
         mTitleText = (TextView) mRootView.findViewById(R.id.top_title);
+
+        mPlayListButton = (ImageButton) mRootView.findViewById(R.id.btnPlaylist);
+        mPlayListButton.setImageResource(mPlayListIcon);
+        if (mPlayListButton != null) {
+            mPlayListButton.requestFocus();
+            mPlayListButton.setOnClickListener(mPlayListListener);
+        }
 
         //center layout
         mCenterLayout = mRootView.findViewById(R.id.layout_center);
@@ -711,6 +730,16 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         public void onClick(View v) {
             doToggleFullscreen();
             show();
+        }
+    };
+
+    /**
+     * set play list click listener
+     */
+    private View.OnClickListener mPlayListListener = new View.OnClickListener() {
+        public void onClick(View v) {
+//            doToggleFullscreen();
+//            show();
         }
     };
 
