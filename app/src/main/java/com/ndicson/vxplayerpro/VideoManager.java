@@ -10,7 +10,7 @@ import java.util.HashMap;
 
 public class VideoManager {
     // SDCard Path
-    final String MEDIA_PATH = new String(Environment.getExternalStorageDirectory().getAbsolutePath() );
+    final String MEDIA_PATH = new String(Environment.getExternalStorageDirectory().getAbsolutePath());
     private ArrayList<HashMap<String, String>> videosList = new ArrayList<HashMap<String, String>>();
 
 

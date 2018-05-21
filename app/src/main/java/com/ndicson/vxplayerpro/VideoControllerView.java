@@ -26,9 +26,13 @@ import java.lang.ref.WeakReference;
 import java.util.Formatter;
 import java.util.Locale;
 
+import android.content.Context;
+import android.content.Intent;
+
 public class VideoControllerView extends FrameLayout implements VideoGestureListener {
 
     private static final String TAG = "VideoControllerView";
+    private Context mCtx;
 
     private static final int HANDLER_ANIMATE_OUT = 1;// out animate
     private static final int HANDLER_UPDATE_PROGRESS = 2;//cycle update progress
@@ -52,6 +56,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private MediaPlayerControlListener mMediaPlayerControlListener;
     private ViewGroup mAnchorView;
     private SurfaceView mSurfaceView;
+
 
     @DrawableRes
     private int mExitIcon;
@@ -99,6 +104,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private ImageButton mFullscreenButton;
 
     private Handler mHandler = new ControllerViewHandler(this);
+    private Handler sbHandler = new Handler();
+    private Vutils utils = new Vutils();
 
     public VideoControllerView(Builder builder) {
         super(builder.context);
@@ -130,6 +137,39 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
             }
         });
     }
+
+
+    /**
+     * Update timer on seekbar
+     * */
+    public void updateProgressBar() {
+        sbHandler.postDelayed(mUpdateTimeTask, 100);
+    }
+
+    /**
+     * Background Runnable thread
+     * */
+    private Runnable mUpdateTimeTask = new Runnable() {
+        public void run() {
+            long totalDuration = mMediaPlayerControlListener.getDuration();
+            long currentDuration = mMediaPlayerControlListener.getCurrentPosition();
+
+            // Displaying Total Duration time
+            mEndTime.setText(""+utils.milliSecondsToTimer(totalDuration));
+            // Displaying time completed playing
+            mCurrentTime.setText(""+utils.milliSecondsToTimer(currentDuration));
+
+            // Updating progress bar
+            int progress = (int)(utils.getProgressPercentage(currentDuration, totalDuration));
+            //Log.d("Progress", ""+progress);
+            mSeekBar.setProgress(progress);
+
+            // Running this thread after 100 milliseconds
+            sbHandler.postDelayed(this, 100);
+        }
+    };
+
+//================##### End Seek bar change listener method Implementation ####=============================//
 
     public static class Builder {
 
@@ -738,8 +778,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
      */
     private View.OnClickListener mPlayListListener = new View.OnClickListener() {
         public void onClick(View v) {
-//            doToggleFullscreen();
-//            show();
+            Intent i = new Intent(mContext.getApplicationContext(), PlayListActivity.class);
+            mContext.startActivityForResult(i, 100);
         }
     };
 
