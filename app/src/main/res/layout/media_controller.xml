@@ -79,11 +79,26 @@
     </FrameLayout>
 
 
+    <FrameLayout
+        android:id="@+id/layout_centerleft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:visibility="visible">
+
+        <ListView
+            android:id="@+id/playlist_center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:src="@drawable/btn_playlist" />
+    </FrameLayout>
+
     <!-- Player Footer -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/player_footer_bg"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="145dp"
         android:layout_alignParentBottom="true"
         android:background="@layout/bg_player_footer"
         android:gravity="center"
@@ -92,15 +107,14 @@
         <!-- Timer Display -->
         <LinearLayout
             android:id="@+id/layout_bottom"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@id/player_footer_bg"
-            android:layout_below="@id/layout_center"
+            android:orientation="horizontal"
             android:layout_marginBottom="1dp"
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:layout_marginTop="5dp"
-            android:background="@layout/rounded_corner"
+            android:background="@null"
             android:gravity="center_vertical"
             android:minHeight="50dp"
             android:padding="9dp"
@@ -117,7 +131,7 @@
                 android:gravity="left"
                 android:paddingRight="4dip"
                 android:text="00:00"
-                android:textColor="#eeeeee"
+                android:textColor="#04cbde"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -125,7 +139,7 @@
             <SeekBar
                 android:id="@+id/bottom_seekbar"
                 style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_above="@id/bottom_time"
                 android:layout_gravity="center_vertical"
@@ -159,30 +173,17 @@
 
         <!-- Player Buttons -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
             android:layout_marginTop="1dp"
             android:background="@layout/rounded_corner"
             android:gravity="center_vertical"
             android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
             android:paddingLeft="10dp"
             android:paddingRight="10dp">
 
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="5dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="5dp"
-                android:layout_marginTop="5dp"
-                android:background="@layout/rounded_corner"
-                android:gravity="center_vertical"
-                android:minHeight="50dp"
-                android:padding="9dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"></LinearLayout>
 
             <!-- Previous Button -->
             <ImageButton
@@ -190,6 +191,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toLeftOf="@+id/btn_backward"
+                android:layout_marginLeft="15dp"
                 android:background="@null"
                 android:src="@drawable/btn_previous" />
             <!-- Backward Button -->
@@ -225,31 +227,19 @@
                 android:background="@null"
                 android:src="@drawable/btn_next" />
 
-            <LinearLayout
+            <ImageButton
+                android:id="@+id/bottom_fullscreen"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="5dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="5dp"
-                android:layout_marginTop="5dp"
-                android:background="@layout/rounded_corner"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="15dp"
+                android:background="@null"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
-                android:padding="9dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp">
+                android:src="@drawable/ic_media_fullscreen_stretch" />
 
-                <ImageButton
-                    android:id="@+id/bottom_fullscreen"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:background="@null"
-                    android:src="@drawable/ic_media_fullscreen_stretch" />
-            </LinearLayout>
 
         </LinearLayout>
-    </LinearLayout>
+    </RelativeLayout>
 
 
 </RelativeLayout>

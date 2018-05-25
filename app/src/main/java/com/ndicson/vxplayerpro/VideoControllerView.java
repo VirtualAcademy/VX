@@ -2,7 +2,11 @@ package com.ndicson.vxplayerpro;
 
 
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
@@ -16,15 +20,21 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
@@ -66,6 +76,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     @DrawableRes
     private int mPlayIcon;
     @DrawableRes
+    private int mPlayListIcon;
+    @DrawableRes
     private int mShrinkIcon;
     @DrawableRes
     private int mStretchIcon;
@@ -73,10 +85,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     //top layout
     private View mTopLayout;
     private ImageButton mBackButton;
+    private ImageButton mPlayListButton;
     private TextView mTitleText;
 
     //center layout
     private View mCenterLayout;
+    private View plaayListCenterLayout;
     private ImageView mCenterImage;
     private ProgressBar mCenterProgress;
     private float mCurBrightness = -1;
@@ -91,6 +105,10 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
     private Handler mHandler = new ControllerViewHandler(this);
 
+    // Variables
+    private ArrayList<HashMap<String, String>> videoList = new ArrayList<HashMap<String, String>>();
+    private int videoIndex;
+
     public VideoControllerView(Builder builder) {
         super(builder.context);
         this.mContext = builder.context;
@@ -101,6 +119,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         this.mCanControlVolume = builder.canControlVolume;
         this.mCanControlBrightness = builder.canControlBrightness;
         this.mExitIcon = builder.exitIcon;
+        this.mPlayListIcon = builder.playListIcon;
         this.mPauseIcon = builder.pauseIcon;
         this.mPlayIcon = builder.playIcon;
         this.mStretchIcon = builder.stretchIcon;
@@ -137,12 +156,15 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         private int shrinkIcon = R.drawable.ic_media_fullscreen_shrink;
         @DrawableRes
         private int stretchIcon = R.drawable.ic_media_fullscreen_stretch;
+        @DrawableRes
+        public int playListIcon = R.drawable.btn_playlist;
 
         //Required
-        public Builder(@Nullable Activity context,@Nullable MediaPlayerControlListener mediaControlListener){
+        public Builder(@Nullable Activity context, @Nullable MediaPlayerControlListener mediaControlListener) {
             this.context = context;
             this.mediaPlayerControlListener = mediaControlListener;
         }
+
         public Builder with(@Nullable Activity context) {
             this.context = context;
             return this;
@@ -159,13 +181,18 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
             return this;
         }
 
-        public Builder withVideoSurfaceView(@Nullable SurfaceView surfaceView){
+        public Builder withVideoSurfaceView(@Nullable SurfaceView surfaceView) {
             this.surfaceView = surfaceView;
             return this;
         }
 
         public Builder exitIcon(@DrawableRes int exitIcon) {
             this.exitIcon = exitIcon;
+            return this;
+        }
+
+        public Builder playListIcon(@DrawableRes int playListIcon) {
+            this.playListIcon = playListIcon;
             return this;
         }
 
@@ -265,6 +292,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private void initControllerView() {
         //top layout
         mTopLayout = mRootView.findViewById(R.id.layout_top);
+        mPlayListButton = (ImageButton) mRootView.findViewById(R.id.btnPlaylist);
+        mPlayListButton.setImageResource(mPlayListIcon);
+        if (mPlayListButton != null) {
+            mPlayListButton.requestFocus();
+            mPlayListButton.setOnClickListener(myViewListener);
+        }
         mBackButton = (ImageButton) mRootView.findViewById(R.id.top_back);
         mBackButton.setImageResource(mExitIcon);
         if (mBackButton != null) {
@@ -279,6 +312,9 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         mCenterLayout.setVisibility(GONE);
         mCenterImage = (ImageView) mRootView.findViewById(R.id.image_center_bg);
         mCenterProgress = (ProgressBar) mRootView.findViewById(R.id.progress_center);
+        //playlist
+        plaayListCenterLayout = mRootView.findViewById(R.id.playlist_center);
+        plaayListCenterLayout.setVisibility(GONE);
 
         //bottom layout
         mBottomLayout = mRootView.findViewById(R.id.layout_bottom);
@@ -457,7 +493,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         if (mCurrentTime != null) {
             Log.e(TAG, "position:" + position + " -> duration:" + duration);
             mCurrentTime.setText(stringToTime(position));
-            if(mMediaPlayerControlListener.isComplete()){
+            if (mMediaPlayerControlListener.isComplete()) {
                 mCurrentTime.setText(stringToTime(duration));
             }
         }
@@ -475,7 +511,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
                 mCenterLayout.setVisibility(GONE);
 //                break;// do need bread,should let gestureDetector to handle event
             default://gestureDetector handle other MotionEvent
-                if(mGestureDetector != null)
+                if (mGestureDetector != null)
                     mGestureDetector.onTouchEvent(event);
         }
         return true;
@@ -581,6 +617,16 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
 
     /**
+     * set video view click listener
+     */
+    private View.OnClickListener myViewListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            showPlayList();
+        }
+    };
+
+
+    /**
      * set top back click listener
      */
     private View.OnClickListener mBackListener = new View.OnClickListener() {
@@ -647,7 +693,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
      */
     private void setGestureListener() {
 
-        if(mCanControlVolume) {
+        if (mCanControlVolume) {
             mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
             mMaxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         }
@@ -701,12 +747,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     @Override
     public void onVerticalScroll(float percent, int direction) {
         if (direction == ViewGestureListener.SWIPE_LEFT) {
-            if(mCanControlBrightness) {
+            if (mCanControlBrightness) {
                 mCenterImage.setImageResource(R.drawable.video_bright_bg);
                 updateBrightness(percent);
             }
         } else {
-            if(mCanControlVolume) {
+            if (mCanControlVolume) {
                 mCenterImage.setImageResource(R.drawable.video_volume_bg);
                 updateVolume(percent);
             }
@@ -743,6 +789,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         mCenterProgress.setProgress(progress);
     }
 
+
     /**
      * update brightness by seek percent
      *
@@ -771,6 +818,16 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         float p = attributes.screenBrightness * 100;
         mCenterProgress.setProgress((int) p);
 
+    }
+
+
+    /**
+     * update video title
+     *
+     * @param videoLable seek percent
+     */
+    public void setVideoLable(String videoLable) {
+        mTitleText.setText(videoLable);
     }
 
 
@@ -820,6 +877,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
         /**
          * video is complete
+         *
          * @return complete or not
          */
         boolean isComplete();
@@ -845,8 +903,61 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         void toggleFullScreen();
 
         /**
+         * show play list
+         */
+        void showPlayList();
+
+        /**
+         * show play list
+         */
+        void setVideoLable(String videoLable);
+
+        /**
          * exit media player
          */
         void exit();
+    }
+
+
+    //    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    public void showPlayList() {
+
+        ArrayList<HashMap<String, String>> videoListData = new ArrayList<HashMap<String, String>>();
+
+        VideoManager plm = new VideoManager();
+        // get all video from sdcard
+        this.videoList = plm.getPlayList();
+
+        // looping through playlist
+        for (int i = 0; i < videoList.size(); i++) {
+            // creating new HashMap
+            HashMap<String, String> video = videoList.get(i);
+
+            // adding HashList to ArrayList
+            videoListData.add(video);
+        }
+
+        // Adding menuItems to ListView
+        ListAdapter adapter = new SimpleAdapter(getContext(), videoListData,
+                R.layout.playlist_item, new String[]{"videoTitle"}, new int[]{
+                R.id.videoTitle});
+        ListView playlistview = (ListView) mRootView.findViewById(R.id.playlist_center);
+
+        playlistview.setAdapter(adapter);
+
+        // listening to single listitem click
+        playlistview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                // getting listitem index
+                videoIndex = position;
+
+            }
+
+
+        });
+        return videoIndex;
     }
 }
