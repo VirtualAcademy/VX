@@ -1,5 +1,6 @@
 package com.ndicson.vxplayerpro;
 
+
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
@@ -26,13 +27,14 @@ import java.lang.ref.WeakReference;
 import java.util.Formatter;
 import java.util.Locale;
 
-import android.content.Context;
-import android.content.Intent;
-
+/**
+ * Created by Bruce Too
+ * On 7/12/16.
+ * At 16:09
+ */
 public class VideoControllerView extends FrameLayout implements VideoGestureListener {
 
     private static final String TAG = "VideoControllerView";
-    private Context mCtx;
 
     private static final int HANDLER_ANIMATE_OUT = 1;// out animate
     private static final int HANDLER_UPDATE_PROGRESS = 2;//cycle update progress
@@ -57,7 +59,6 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private ViewGroup mAnchorView;
     private SurfaceView mSurfaceView;
 
-
     @DrawableRes
     private int mExitIcon;
     @DrawableRes
@@ -65,24 +66,13 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     @DrawableRes
     private int mPlayIcon;
     @DrawableRes
-    private int mFastFwdIcon;
-    @DrawableRes
-    private int mRewindIcon;
-    @DrawableRes
-    private int mNextIcon;
-    @DrawableRes
-    private int mPrevIcon;
-    @DrawableRes
     private int mShrinkIcon;
     @DrawableRes
     private int mStretchIcon;
-    @DrawableRes
-    private int mPlayListIcon;
 
     //top layout
     private View mTopLayout;
     private ImageButton mBackButton;
-    private ImageButton mPlayListButton;
     private TextView mTitleText;
 
     //center layout
@@ -96,16 +86,10 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
     //bottom layout
     private View mBottomLayout;
-    private ImageButton mPauseButton;
-    private ImageButton mFastFwdButton;
-    private ImageButton mRewindButton;
-    private ImageButton mPrevious;
-    private ImageButton mNext;
+    private ImageButton mPlayPauseButton;
     private ImageButton mFullscreenButton;
 
     private Handler mHandler = new ControllerViewHandler(this);
-    private Handler sbHandler = new Handler();
-    private Vutils utils = new Vutils();
 
     public VideoControllerView(Builder builder) {
         super(builder.context);
@@ -119,11 +103,6 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         this.mExitIcon = builder.exitIcon;
         this.mPauseIcon = builder.pauseIcon;
         this.mPlayIcon = builder.playIcon;
-        this.mFastFwdIcon = builder.fastfwdIcon;
-        this.mRewindIcon = builder.rewindIcon;
-        this.mNextIcon = builder.nextIcon;
-        this.mPrevIcon = builder.prevIcon;
-        this.mPlayListIcon = builder.playListIcon;
         this.mStretchIcon = builder.stretchIcon;
         this.mShrinkIcon = builder.shrinkIcon;
         this.mSurfaceView = builder.surfaceView;
@@ -137,39 +116,6 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
             }
         });
     }
-
-
-    /**
-     * Update timer on seekbar
-     * */
-    public void updateProgressBar() {
-        sbHandler.postDelayed(mUpdateTimeTask, 100);
-    }
-
-    /**
-     * Background Runnable thread
-     * */
-    private Runnable mUpdateTimeTask = new Runnable() {
-        public void run() {
-            long totalDuration = mMediaPlayerControlListener.getDuration();
-            long currentDuration = mMediaPlayerControlListener.getCurrentPosition();
-
-            // Displaying Total Duration time
-            mEndTime.setText(""+utils.milliSecondsToTimer(totalDuration));
-            // Displaying time completed playing
-            mCurrentTime.setText(""+utils.milliSecondsToTimer(currentDuration));
-
-            // Updating progress bar
-            int progress = (int)(utils.getProgressPercentage(currentDuration, totalDuration));
-            //Log.d("Progress", ""+progress);
-            mSeekBar.setProgress(progress);
-
-            // Running this thread after 100 milliseconds
-            sbHandler.postDelayed(this, 100);
-        }
-    };
-
-//================##### End Seek bar change listener method Implementation ####=============================//
 
     public static class Builder {
 
@@ -188,22 +134,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         @DrawableRes
         private int playIcon = R.drawable.btn_play;
         @DrawableRes
-        private int fastfwdIcon = R.drawable.btn_forward;
-        @DrawableRes
-        private int rewindIcon = R.drawable.btn_backward;
-        @DrawableRes
-        private int prevIcon = R.drawable.btn_previous;
-        @DrawableRes
-        private int nextIcon = R.drawable.btn_next;
-        @DrawableRes
         private int shrinkIcon = R.drawable.ic_media_fullscreen_shrink;
         @DrawableRes
         private int stretchIcon = R.drawable.ic_media_fullscreen_stretch;
-        @DrawableRes
-        public int playListIcon = R.drawable.btn_playlist;
 
         //Required
-        public Builder(@Nullable Activity context, @Nullable MediaPlayerControlListener mediaControlListener){
+        public Builder(@Nullable Activity context,@Nullable MediaPlayerControlListener mediaControlListener){
             this.context = context;
             this.mediaPlayerControlListener = mediaControlListener;
         }
@@ -243,36 +179,10 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
             return this;
         }
 
-        public Builder prevIcon(@DrawableRes int prevIcon) {
-            this.prevIcon = prevIcon;
-            return this;
-        }
-
-        public Builder rewindIcon(@DrawableRes int rewindIcon) {
-            this.rewindIcon = rewindIcon;
-            return this;
-        }
-
-        public Builder fastfwdIcon(@DrawableRes int fastfwdIcon) {
-            this.fastfwdIcon = fastfwdIcon;
-            return this;
-        }
-
-        public Builder nextIcon(@DrawableRes int nextIcon) {
-            this.nextIcon = nextIcon;
-            return this;
-        }
-
         public Builder shrinkIcon(@DrawableRes int shrinkIcon) {
             this.shrinkIcon = shrinkIcon;
             return this;
         }
-
-        public Builder playListIcon(@DrawableRes int playListIcon) {
-            this.playListIcon = playListIcon;
-            return this;
-        }
-
 
         public Builder stretchIcon(@DrawableRes int stretchIcon) {
             this.stretchIcon = stretchIcon;
@@ -364,13 +274,6 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
         mTitleText = (TextView) mRootView.findViewById(R.id.top_title);
 
-        mPlayListButton = (ImageButton) mRootView.findViewById(R.id.btnPlaylist);
-        mPlayListButton.setImageResource(mPlayListIcon);
-        if (mPlayListButton != null) {
-            mPlayListButton.requestFocus();
-            mPlayListButton.setOnClickListener(mPlayListListener);
-        }
-
         //center layout
         mCenterLayout = mRootView.findViewById(R.id.layout_center);
         mCenterLayout.setVisibility(GONE);
@@ -379,36 +282,11 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
         //bottom layout
         mBottomLayout = mRootView.findViewById(R.id.layout_bottom);
-        mPauseButton = (ImageButton) mRootView.findViewById(R.id.btn_play_pause);
-        if (mPauseButton != null) {
-            mPauseButton.requestFocus();
-            mPauseButton.setOnClickListener(mPauseListener);
+        mPlayPauseButton = (ImageButton) mRootView.findViewById(R.id.btn_play_pause);
+        if (mPlayPauseButton != null) {
+            mPlayPauseButton.requestFocus();
+            mPlayPauseButton.setOnClickListener(mPauseListener);
         }
-
-        mFastFwdButton = (ImageButton) mRootView.findViewById(R.id.btn_forward);
-        if (mFastFwdButton != null) {
-            mFastFwdButton.requestFocus();
-            mFastFwdButton.setOnClickListener(mFastForwardListener);
-        }
-
-        mRewindButton = (ImageButton) mRootView.findViewById(R.id.btn_backward);
-        if (mRewindButton != null) {
-            mRewindButton.requestFocus();
-            mRewindButton.setOnClickListener(mRewindListener);
-        }
-
-        mPrevious = (ImageButton) mRootView.findViewById(R.id.btn_skipback);
-        if (mPrevious != null) {
-            mPrevious.requestFocus();
-            mPrevious.setOnClickListener(mPrevListener);
-        }
-
-        mNext = (ImageButton) mRootView.findViewById(R.id.btn_skipfwd);
-        if (mNext != null) {
-            mNext.requestFocus();
-            mNext.setOnClickListener(mNextListener);
-        }
-
 
         mFullscreenButton = (ImageButton) mRootView.findViewById(R.id.bottom_fullscreen);
         if (mFullscreenButton != null) {
@@ -465,8 +343,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         }
 
         setSeekProgress();
-        if (mPauseButton != null) {
-            mPauseButton.requestFocus();
+        if (mPlayPauseButton != null) {
+            mPlayPauseButton.requestFocus();
         }
         togglePausePlay();
         toggleFullScreen();
@@ -608,14 +486,14 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
      * toggle pause or play
      */
     private void togglePausePlay() {
-        if (mRootView == null || mPauseButton == null || mMediaPlayerControlListener == null) {
+        if (mRootView == null || mPlayPauseButton == null || mMediaPlayerControlListener == null) {
             return;
         }
 
         if (mMediaPlayerControlListener.isPlaying()) {
-            mPauseButton.setImageResource(mPauseIcon);
+            mPlayPauseButton.setImageResource(mPauseIcon);
         } else {
-            mPauseButton.setImageResource(mPlayIcon);
+            mPlayPauseButton.setImageResource(mPlayIcon);
         }
     }
 
@@ -692,8 +570,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
     @Override
     public void setEnabled(boolean enabled) {
-        if (mPauseButton != null) {
-            mPauseButton.setEnabled(enabled);
+        if (mPlayPauseButton != null) {
+            mPlayPauseButton.setEnabled(enabled);
         }
         if (mSeekBar != null) {
             mSeekBar.setEnabled(enabled);
@@ -723,63 +601,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     };
 
     /**
-     * set fastforward click listener
-     */
-    private View.OnClickListener mFastForwardListener = new View.OnClickListener() {
-        private int numclicks =0;
-        public void onClick(View v) {
-            numclicks+=1;
-            speedChange(numclicks);
-        }
-    };
-
-    /**
-     * set Rewind Listener click listener
-     */
-    private View.OnClickListener mRewindListener = new View.OnClickListener() {
-        private int numclicks =0;
-        public void onClick(View v) {
-            numclicks-=1;
-            speedChange(numclicks);
-        }
-    };
-
-
-    /**
-     * set Skip to Previous Listener click listener
-     */
-    private View.OnClickListener mPrevListener = new View.OnClickListener() {
-        public void onClick(View v) {
-            seekBackWard();
-        }
-    };
-
-    /**
-     * set Skip to Next Listener click listener
-     */
-    private View.OnClickListener mNextListener = new View.OnClickListener() {
-        public void onClick(View v) {
-            seekForWard();
-        }
-    };
-
-    /**
      * set full screen click listener
      */
     private View.OnClickListener mFullscreenListener = new View.OnClickListener() {
         public void onClick(View v) {
             doToggleFullscreen();
             show();
-        }
-    };
-
-    /**
-     * set play list click listener
-     */
-    private View.OnClickListener mPlayListListener = new View.OnClickListener() {
-        public void onClick(View v) {
-            Intent i = new Intent(mContext.getApplicationContext(), PlayListActivity.class);
-            mContext.startActivityForResult(i, 100);
         }
     };
 
@@ -865,19 +692,6 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
         int pos = mMediaPlayerControlListener.getCurrentPosition();
         pos += PROGRESS_SEEK;
-        mMediaPlayerControlListener.seekTo(pos);
-        setSeekProgress();
-
-        show();
-    }
-
-    private void speedChange(int speedchanged) {
-        if (mMediaPlayerControlListener == null) {
-            return;
-        }
-
-        int pos = mMediaPlayerControlListener.getCurrentPosition();
-        pos += PROGRESS_SEEK*speedchanged;
         mMediaPlayerControlListener.seekTo(pos);
         setSeekProgress();
 
