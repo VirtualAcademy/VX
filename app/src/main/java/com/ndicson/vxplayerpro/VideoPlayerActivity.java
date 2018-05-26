@@ -35,6 +35,7 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     private View mLoadingView;
     private boolean mIsComplete;
     private int currentVideoIndex = 0;
+    private VideoControllerView.MediaPlayerControlListener mMediaPlayerControlListener;
 
     private ArrayList<HashMap<String, String>> videoList = new ArrayList<HashMap<String, String>>();
 
@@ -50,46 +51,30 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         SurfaceHolder videoHolder = mVideoSurface.getHolder();
         videoHolder.addCallback(this);
 
-        mMediaPlayer = new MediaPlayer();
-
+        intController("");
+        controller.setMediaPlayerControlListener(mMediaPlayerControlListener);
         //Video list
         VideoManager videoManager = new VideoManager();
         videoList = videoManager.getPlayList();
-        HashMap<String, String> video = videoList.get(2);
-        String vidpath = video.get("videoPath");
-        String videoTitle = video.get("videoTitle");
+        HashMap<String, String> video = videoList.get(currentVideoIndex);
 
-        mMediaPlayer.setOnVideoSizeChangedListener(this);
+        playVideo(controller.getChoice());
         //(FrameLayout) findViewById(R.id.videoSurfaceContainer)
-        controller = new VideoControllerView.Builder(this, this)
-                .withVideoTitle(videoTitle)
-                .withVideoSurfaceView(mVideoSurface)//to enable toggle display controller view
-                .canControlBrightness(true)
-                .canControlVolume(true)
-                .canSeekVideo(true)
-                .exitIcon(R.drawable.video_top_back)
-                .pauseIcon(R.drawable.btn_pause)
-                .playIcon(R.drawable.btn_play)
-                .shrinkIcon(R.drawable.ic_media_fullscreen_shrink)
-                .stretchIcon(R.drawable.ic_media_fullscreen_stretch)
-                .build((FrameLayout) findViewById(R.id.videoSurfaceContainer));//layout container that hold video play view
 
-        mLoadingView.setVisibility(View.VISIBLE);
-
-        try {
-            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mMediaPlayer.setDataSource(this, Uri.parse(vidpath));//Uri.parse("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
-            mMediaPlayer.setOnPreparedListener(this);
-            mMediaPlayer.setOnCompletionListener(this);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+//            mMediaPlayer.setDataSource(this, Uri.parse(vidpath));//Uri.parse("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
+//            mMediaPlayer.setOnPreparedListener(this);
+//            mMediaPlayer.setOnCompletionListener(this);
+//        } catch (IllegalArgumentException e) {
+//            e.printStackTrace();
+//        } catch (SecurityException e) {
+//            e.printStackTrace();
+//        } catch (IllegalStateException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         mVideoSurface.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -261,10 +246,10 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         startActivityForResult(intent,100);
     }
 
-    @Override
-    public void setVideoLable(String videoLable) {
-        controller.setVideoLable(videoLable);
-    }
+//    @Override
+//    public void setVideoLable(String videoLable) {
+//        controller.setVideoLable(videoLable);
+//    }
 
 
     @Override
@@ -292,6 +277,26 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
 
     }
 
+    // initialise controller
+    private void intController(String videoTitle){
+
+        controller = new VideoControllerView.Builder(this, this)
+                .withVideoTitle(videoTitle)
+                .withVideoSurfaceView(mVideoSurface)//to enable toggle display controller view
+                .canControlBrightness(true)
+                .canControlVolume(true)
+                .canSeekVideo(true)
+                .exitIcon(R.drawable.video_top_back)
+                .pauseIcon(R.drawable.btn_pause)
+                .playIcon(R.drawable.btn_play)
+                .shrinkIcon(R.drawable.ic_media_fullscreen_shrink)
+                .stretchIcon(R.drawable.ic_media_fullscreen_stretch)
+                .build((FrameLayout) findViewById(R.id.videoSurfaceContainer));//layout container that hold video play view
+
+        mLoadingView.setVisibility(View.VISIBLE);
+//        controller.showPlayList();
+    }
+
     /**
      * Function to play a song
      * @param currentVideoIndex - index of song
@@ -301,26 +306,21 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         // Play video
         try {
 
-            mVideoSurface = (ResizeSurfaceView) findViewById(R.id.videoSurface);
-            mContentView = findViewById(R.id.video_container);
-            mLoadingView = findViewById(R.id.loading);
-            SurfaceHolder videoHolder = mVideoSurface.getHolder();
-            videoHolder.addCallback(this);
             mMediaPlayer = new MediaPlayer();
 
             // Displaying Video title
             String videoTitle = videoList.get(currentVideoIndex).get("videoTitle");
 
-            setVideoLable(videoTitle);
+            controller.setVideoLable(videoTitle);
             controller.getId();
 
             mMediaPlayer.setOnVideoSizeChangedListener(this);
 
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mMediaPlayer.setDataSource(this, Uri.parse(videoList.get(currentVideoIndex).get("videoPath")));
             mMediaPlayer.setOnPreparedListener(this);
             mMediaPlayer.setOnCompletionListener(this);
-            mMediaPlayer.setDataSource(this, Uri.parse(videoList.get(currentVideoIndex).get("videoPath")));
-            mMediaPlayer.start();
+
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         } catch (IllegalStateException e) {

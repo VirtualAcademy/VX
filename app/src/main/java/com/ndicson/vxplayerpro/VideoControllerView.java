@@ -8,6 +8,7 @@ import android.arch.lifecycle.OnLifecycleEvent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.DrawableRes;
@@ -26,6 +27,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.SimpleAdapter;
@@ -42,7 +44,7 @@ import java.util.Locale;
  * On 7/12/16.
  * At 16:09
  */
-public class VideoControllerView extends FrameLayout implements VideoGestureListener {
+public class VideoControllerView extends FrameLayout implements VideoGestureListener, View.OnClickListener {
 
     private static final String TAG = "VideoControllerView";
 
@@ -51,23 +53,25 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     private static final long PROGRESS_SEEK = 500;
     private static final long ANIMATE_TIME = 300;
 
+    private boolean mIsShowing;//controller view showing
+    private boolean mIsDragging; //is dragging seekBar
+    private boolean mCanSeekVideo;
+    private boolean mCanControlVolume;
+    private boolean mCanControlBrightness;
     private View mRootView; // root view of this
     private SeekBar mSeekBar; //seek bar for video
     private TextView mEndTime, mCurrentTime;
-    private boolean mIsShowing;//controller view showing
-    private boolean mIsDragging; //is dragging seekBar
     private StringBuilder mFormatBuilder;
     private Formatter mFormatter;
     private GestureDetector mGestureDetector;//gesture detector
 
     private Activity mContext;
-    private boolean mCanSeekVideo;
-    private boolean mCanControlVolume;
-    private boolean mCanControlBrightness;
     private String mVideoTitle;
     private MediaPlayerControlListener mMediaPlayerControlListener;
+    private MediaPlayer mPlayer;
     private ViewGroup mAnchorView;
     private SurfaceView mSurfaceView;
+    private int indexChoice = 0;
 
     @DrawableRes
     private int mExitIcon;
@@ -134,6 +138,14 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
                 return false;
             }
         });
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.btn_play_pause:
+                System.out.print("play button clicked");
+        }
     }
 
     public static class Builder {
@@ -396,6 +408,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
     public void toggleControllerView() {
         if (!isShowing()) {
             show();
+            plaayListCenterLayout.setVisibility(GONE);
         } else {
             //animate out controller view
             Message msg = mHandler.obtainMessage(HANDLER_ANIMATE_OUT);
@@ -621,7 +634,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
      */
     private View.OnClickListener myViewListener = new View.OnClickListener() {
         public void onClick(View v) {
-            showPlayList();
+            plaayListCenterLayout.setVisibility(VISIBLE);
+            indexChoice = showPlayList();
         }
     };
 
@@ -827,7 +841,17 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
      * @param videoLable seek percent
      */
     public void setVideoLable(String videoLable) {
+        mVideoTitle = videoLable;
         mTitleText.setText(videoLable);
+    }
+
+
+    /**
+     * update video title
+     *
+     */
+    public int getChoice() {
+        return indexChoice;
     }
 
 
@@ -910,7 +934,12 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
         /**
          * show play list
          */
-        void setVideoLable(String videoLable);
+//        void getChoice();
+
+        /**
+         * show set video lable
+         */
+//        void setVideoLable(String videoLable);
 
         /**
          * exit media player
@@ -920,7 +949,7 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
 
 
     //    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    public void showPlayList() {
+    public int showPlayList() {
 
         ArrayList<HashMap<String, String>> videoListData = new ArrayList<HashMap<String, String>>();
 
@@ -953,6 +982,8 @@ public class VideoControllerView extends FrameLayout implements VideoGestureList
                                     int position, long id) {
                 // getting listitem index
                 videoIndex = position;
+                plaayListCenterLayout.setVisibility(GONE);
+                toggleControllerView();
 
             }
 
